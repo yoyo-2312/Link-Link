@@ -240,6 +240,10 @@ button:disabled {
   border-color: #3e876a;
   color: #fff;
 }
+.mini-level.locked {
+  color: #b5c2b8;
+  background: #f5f7f3;
+}
 .mini-level:not(:disabled):hover {
   border-color: #5da784;
 }
@@ -685,6 +689,13 @@ button:disabled {
 }
 .level-card.current span {
   color: #f8d6a9;
+}
+.level-card.locked {
+  background: #f3f6f2;
+  color: #b6c5b8;
+}
+.level-card.locked span {
+  color: #b6c5b8;
 }
 .level-card:not(:disabled):hover {
   border-color: #54a47b;
