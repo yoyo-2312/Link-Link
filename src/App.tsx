@@ -1,286 +1,697 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { createBoard, findAvailablePair, findPath, LEVELS, remainingTiles, reshuffleBoard, samePoint, type Board, type Difficulty, type Point } from './game'
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  applyGravity,
+  createLevelBoard,
+  findAvailablePair,
+  findPath,
+  LEVELS,
+  remainingTiles,
+  reshuffleBoard,
+  samePoint,
+  type Board,
+  type Point,
+} from "./game";
 
-type Phase = 'ready' | 'playing' | 'paused' | 'won' | 'lost'
-type MatchLine = { path: Point[]; first: Point; second: Point }
+type Phase = "playing" | "paused" | "won" | "lost";
+type Progress = { unlocked: number; stars: number[]; best: number[] };
+type MatchLine = { path: Point[]; first: Point; second: Point };
 
 const SHAPES = [
   <circle cx="24" cy="24" r="12" />,
-  <rect x="13" y="13" width="22" height="22" rx="3" />,
-  <path d="M24 10 38 36H10Z" />,
-  <path d="M24 9 38 24 24 39 10 24Z" />,
-  <path d="M24 8 39 19 33 37H15L9 19Z" />,
-  <path d="M24 9 28.5 19.5 40 20.5 31 28.5 34 40 24 33.5 14 40 17 28.5 8 20.5 19.5 19.5Z" />,
-  <path d="M12 12h24v8H20v16h-8Z" />,
+  <rect x="12" y="12" width="24" height="24" rx="3" />,
+  <path d="M24 9 39 37H9Z" />,
+  <path d="M24 8 40 24 24 40 8 24Z" />,
+  <path d="M24 7 40 20 34 39H14L8 20Z" />,
+  <path d="M24 7 29 18 41 19 32 28 35 40 24 34 13 40 16 28 7 19 19 18Z" />,
+  <path d="M11 11h26v8H19v18h-8Z" />,
   <path d="M24 9a15 15 0 1 1-15 15h8a7 7 0 1 0 7-7Z" />,
-]
+  <path d="M20 8h8v12h12v8H28v12h-8V28H8v-8h12Z" />,
+  <path d="m16 10 16 0 9 14-9 14H16L7 24Z" />,
+  <path d="M10 12h28M10 24h28M10 36h28" />,
+  <path d="M10 10h28L27 24l11 14H10l11-14Z" />,
+];
 
-const ICONS = {
-  play: <path d="m8 5 12 7-12 7V5Z" />,
-  pause: <><path d="M8 5h3v14H8zM15 5h3v14h-3z" /></>,
-  hint: <><path d="M9 18h6m-5 3h4M8 14a7 7 0 1 1 8 0c-1.3 1-1.5 2-1.5 4h-5C9.5 16 9.3 15 8 14Z" /></>,
-  shuffle: <><path d="M4 7h3c5 0 5 10 10 10h3m-3-3 3 3-3 3M4 17h3c2 0 3-1.5 4-3m2-4c1-1.8 2-3 4-3h3m-3-3 3 3-3 3" /></>,
-  sound: <><path d="M4 9v6h4l5 4V5L8 9H4Zm12-1a6 6 0 0 1 0 8m2-11a10 10 0 0 1 0 14" /></>,
-  mute: <><path d="M4 9v6h4l5 4V5L8 9H4Zm12 0 5 6m0-6-5 6" /></>,
-  restart: <><path d="M20 11a8 8 0 1 1-2-5.5M20 4v7h-7" /></>,
-} as const
-
-function Icon({ name }: { name: keyof typeof ICONS }) {
-  return <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICONS[name]}</svg>
-}
-
-function Shape({ value }: { value: number }) {
-  return <svg className="shape" viewBox="0 0 48 48" aria-hidden="true">{SHAPES[value]}</svg>
-}
-
-function readBest(): Record<Difficulty, number> {
-  try { return { easy: 0, normal: 0, hard: 0, ...JSON.parse(localStorage.getItem('link-link-best') ?? '{}') } }
-  catch { return { easy: 0, normal: 0, hard: 0 } }
-}
-
-function readSound(): boolean {
-  try { return localStorage.getItem('link-link-sound') !== 'off' }
-  catch { return true }
+function readProgress(): Progress {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem("link-link-progress-v2") ?? "{}",
+    );
+    return {
+      unlocked: Math.max(
+        1,
+        Math.min(LEVELS.length, Number(saved.unlocked) || 1),
+      ),
+      stars: Array.from({ length: LEVELS.length }, (_, i) =>
+        Math.max(0, Math.min(3, Number(saved.stars?.[i]) || 0)),
+      ),
+      best: Array.from({ length: LEVELS.length }, (_, i) =>
+        Math.max(0, Number(saved.best?.[i]) || 0),
+      ),
+    };
+  } catch {
+    return {
+      unlocked: 1,
+      stars: Array(LEVELS.length).fill(0),
+      best: Array(LEVELS.length).fill(0),
+    };
+  }
 }
 
 function formatTime(seconds: number) {
-  return `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
+  return `${Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
+}
+
+function Shape({ value }: { value: number }) {
+  return (
+    <svg className="shape" viewBox="0 0 48 48" aria-hidden="true">
+      {SHAPES[value]}
+    </svg>
+  );
 }
 
 export default function App() {
-  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
-  const [board, setBoard] = useState<Board>(() => createBoard(LEVELS.normal.rows, LEVELS.normal.cols))
-  const [phase, setPhase] = useState<Phase>('ready')
-  const [selected, setSelected] = useState<Point | null>(null)
-  const [matchLine, setMatchLine] = useState<MatchLine | null>(null)
-  const [hint, setHint] = useState<Point[] | null>(null)
-  const [seconds, setSeconds] = useState(LEVELS.normal.seconds)
-  const [score, setScore] = useState(0)
-  const [combo, setCombo] = useState(0)
-  const [best, setBest] = useState(readBest)
-  const [sound, setSound] = useState(readSound)
-  const [message, setMessage] = useState('准备好了吗？选择相同的几何图形开始连接。')
-  const [tileSize, setTileSize] = useState(54)
-  const boardRef = useRef<HTMLDivElement>(null)
-  const finishTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const hintTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const audioContext = useRef<AudioContext | null>(null)
-  const lastMatch = useRef(0)
-  const level = LEVELS[difficulty]
-  const tilesLeft = remainingTiles(board)
-  const progress = (1 - tilesLeft / (level.rows * level.cols)) * 100
-
-  useEffect(() => {
-    if (phase !== 'playing') return
-    const timer = window.setInterval(() => setSeconds(current => Math.max(0, current - 1)), 1000)
-    return () => window.clearInterval(timer)
-  }, [phase])
-
-  useEffect(() => {
-    if (phase === 'playing' && seconds === 0) {
-      setPhase('lost')
-      setMessage('时间到了，再试一次吧。')
-    }
-  }, [phase, seconds])
-
-  useEffect(() => {
-    const measure = () => {
-      if (!boardRef.current) return
-      const width = boardRef.current.clientWidth - 24
-      setTileSize(Math.min(62, Math.floor((width - (level.cols - 1) * 7) / level.cols)))
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [difficulty])
-
-  useEffect(() => () => {
-    if (finishTimeout.current) clearTimeout(finishTimeout.current)
-    if (hintTimeout.current) clearTimeout(hintTimeout.current)
-  }, [])
-
-  function beep(frequency: number, duration = 0.09) {
-    if (!sound) return
+  const [progress, setProgress] = useState(readProgress);
+  const [levelIndex, setLevelIndex] = useState(
+    () => readProgress().unlocked - 1,
+  );
+  const level = LEVELS[levelIndex];
+  const [board, setBoard] = useState<Board>(() =>
+    createLevelBoard(LEVELS[readProgress().unlocked - 1]),
+  );
+  const [phase, setPhase] = useState<Phase>("playing");
+  const [seconds, setSeconds] = useState(
+    () => LEVELS[readProgress().unlocked - 1].seconds,
+  );
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [selected, setSelected] = useState<Point | null>(null);
+  const [matchLine, setMatchLine] = useState<MatchLine | null>(null);
+  const [hint, setHint] = useState<Point[] | null>(null);
+  const [hintsLeft, setHintsLeft] = useState(2);
+  const [shufflesLeft, setShufflesLeft] = useState(1);
+  const [sound, setSound] = useState(() => {
     try {
-      audioContext.current ??= new AudioContext()
-      const context = audioContext.current
-      const oscillator = context.createOscillator()
-      const gain = context.createGain()
-      oscillator.type = 'sine'
-      oscillator.frequency.value = frequency
-      gain.gain.setValueAtTime(0.045, context.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration)
-      oscillator.connect(gain).connect(context.destination)
-      oscillator.start()
-      oscillator.stop(context.currentTime + duration)
-    } catch { /* Audio is optional. */ }
+      return localStorage.getItem("link-link-sound") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  const [message, setMessage] = useState("连接相同图形，路线最多转弯两次。");
+  const [levelPickerOpen, setLevelPickerOpen] = useState(false);
+  const [levelPage, setLevelPage] = useState(0);
+  const [tileSize, setTileSize] = useState(48);
+  const boardSpaceRef = useRef<HTMLDivElement>(null);
+  const finishTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMatch = useRef(0);
+  const audioContext = useRef<AudioContext | null>(null);
+  const tilesLeft = remainingTiles(board);
+  const totalTiles = level.rows * level.cols - level.blockers;
+  const completion = Math.round((1 - tilesLeft / totalTiles) * 100);
+  const starsEarned =
+    seconds >= level.seconds * 0.5 ? 3 : seconds >= level.seconds * 0.2 ? 2 : 1;
+
+  useEffect(() => {
+    if (phase !== "playing" || levelPickerOpen) return;
+    const timer = window.setInterval(
+      () => setSeconds((value) => Math.max(0, value - 1)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [phase, levelPickerOpen]);
+
+  useEffect(() => {
+    if (phase === "playing" && seconds === 0) {
+      setPhase("lost");
+      setMessage("时间到！再挑战一次。");
+    }
+  }, [phase, seconds]);
+
+  useEffect(() => {
+    const element = boardSpaceRef.current;
+    if (!element) return;
+    const measure = () => {
+      const width = element.clientWidth - 40;
+      const height = element.clientHeight - 40;
+      setTileSize(
+        Math.max(
+          16,
+          Math.min(
+            80,
+            Math.floor((width - (level.cols - 1) * 5) / level.cols),
+            Math.floor((height - (level.rows - 1) * 5) / level.rows),
+          ),
+        ),
+      );
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+    return () => observer.disconnect();
+  }, [levelIndex]);
+
+  useEffect(
+    () => () => {
+      if (finishTimeout.current) clearTimeout(finishTimeout.current);
+      if (hintTimeout.current) clearTimeout(hintTimeout.current);
+    },
+    [],
+  );
+
+  function beep(frequency: number, duration = 0.08) {
+    if (!sound) return;
+    try {
+      audioContext.current ??= new AudioContext();
+      const audio = audioContext.current;
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.045, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audio.currentTime + duration,
+      );
+      oscillator.connect(gain).connect(audio.destination);
+      oscillator.start();
+      oscillator.stop(audio.currentTime + duration);
+    } catch {
+      /* Sound is optional. */
+    }
   }
 
-  function reset(nextDifficulty = difficulty) {
-    if (finishTimeout.current) clearTimeout(finishTimeout.current)
-    if (hintTimeout.current) clearTimeout(hintTimeout.current)
-    const nextLevel = LEVELS[nextDifficulty]
-    setDifficulty(nextDifficulty)
-    setBoard(createBoard(nextLevel.rows, nextLevel.cols))
-    setSeconds(nextLevel.seconds)
-    setScore(0)
-    setCombo(0)
-    setSelected(null)
-    setMatchLine(null)
-    setHint(null)
-    setPhase('ready')
-    setMessage('准备好了吗？选择相同的几何图形开始连接。')
-    lastMatch.current = 0
+  function loadLevel(index: number) {
+    if (index < 0 || index >= LEVELS.length || index + 1 > progress.unlocked)
+      return;
+    if (finishTimeout.current) clearTimeout(finishTimeout.current);
+    if (hintTimeout.current) clearTimeout(hintTimeout.current);
+    const next = LEVELS[index];
+    setLevelIndex(index);
+    setBoard(createLevelBoard(next));
+    setPhase("playing");
+    setSeconds(next.seconds);
+    setScore(0);
+    setCombo(0);
+    setSelected(null);
+    setMatchLine(null);
+    setHint(null);
+    setHintsLeft(2);
+    setShufflesLeft(1);
+    setMessage(
+      next.gravity
+        ? "重力关卡：消除后图形会向下落。"
+        : "连接相同图形，路线最多转弯两次。",
+    );
+    setLevelPickerOpen(false);
+    lastMatch.current = 0;
   }
 
-  function start() {
-    setPhase('playing')
-    setMessage('找出两个相同图形，连线最多转弯两次。')
+  function finishLevel(finalScore: number) {
+    const updated: Progress = {
+      unlocked: Math.min(
+        LEVELS.length,
+        Math.max(progress.unlocked, level.number + 1),
+      ),
+      stars: [...progress.stars],
+      best: [...progress.best],
+    };
+    updated.stars[levelIndex] = Math.max(
+      updated.stars[levelIndex],
+      starsEarned,
+    );
+    updated.best[levelIndex] = Math.max(updated.best[levelIndex], finalScore);
+    setProgress(updated);
+    try {
+      localStorage.setItem("link-link-progress-v2", JSON.stringify(updated));
+    } catch {
+      /* Progress remains in memory. */
+    }
+    setPhase("won");
+    setMessage(`第 ${level.number} 关通关！`);
+    beep(880, 0.23);
   }
 
   function selectTile(point: Point) {
-    if (phase !== 'playing' || matchLine || board[point.row][point.col] === null) return
-    setHint(null)
-    if (!selected) { setSelected(point); beep(440, 0.055); return }
-    if (samePoint(selected, point)) { setSelected(null); return }
-    const path = findPath(board, selected, point)
+    const value = board[point.row][point.col];
+    if (
+      phase !== "playing" ||
+      levelPickerOpen ||
+      matchLine ||
+      value === null ||
+      value < 0
+    )
+      return;
+    setHint(null);
+    if (!selected) {
+      setSelected(point);
+      beep(440, 0.05);
+      return;
+    }
+    if (samePoint(selected, point)) {
+      setSelected(null);
+      return;
+    }
+    const path = findPath(board, selected, point);
     if (!path) {
-      setSelected(point)
-      setCombo(0)
-      setMessage(board[selected.row][selected.col] === board[point.row][point.col] ? '这两个图形的路径超过两次转弯。' : '请选两个相同的图形。')
-      beep(220, 0.07)
-      return
+      setSelected(point);
+      setCombo(0);
+      setMessage(
+        board[selected.row][selected.col] === value
+          ? "这条路线超过两次转弯。"
+          : "请选择两个相同图形。",
+      );
+      beep(220, 0.07);
+      return;
     }
 
-    const nextCombo = Date.now() - lastMatch.current < 4500 ? Math.min(combo + 1, 5) : 1
-    lastMatch.current = Date.now()
-    setCombo(nextCombo)
-    setMatchLine({ path, first: selected, second: point })
-    setSelected(null)
-    setMessage(nextCombo > 1 ? `连击 ×${nextCombo}，继续保持！` : '连接成功！')
-    beep(660, 0.11)
+    const nextCombo =
+      Date.now() - lastMatch.current < 4500 ? Math.min(combo + 1, 5) : 1;
+    lastMatch.current = Date.now();
+    setCombo(nextCombo);
+    setMatchLine({ path, first: selected, second: point });
+    setSelected(null);
+    setMessage(nextCombo > 1 ? `漂亮！连击 ×${nextCombo}` : "连接成功！");
+    beep(660, 0.1);
     finishTimeout.current = setTimeout(() => {
-      const next = board.map(line => [...line])
-      next[selected.row][selected.col] = null
-      next[point.row][point.col] = null
-      const newScore = score + 100 * nextCombo
-      setScore(newScore)
-      setMatchLine(null)
+      let next = board.map((line) => [...line]);
+      next[selected.row][selected.col] = null;
+      next[point.row][point.col] = null;
+      if (level.gravity) next = applyGravity(next);
+      const finalScore = score + 100 * nextCombo;
+      setScore(finalScore);
+      setMatchLine(null);
       if (remainingTiles(next) === 0) {
-        setBoard(next)
-        setPhase('won')
-        setMessage('全部连接完成，漂亮！')
-        if (newScore > best[difficulty]) {
-          const updated = { ...best, [difficulty]: newScore }
-          setBest(updated)
-          try { localStorage.setItem('link-link-best', JSON.stringify(updated)) } catch { /* Storage is optional. */ }
-        }
-        beep(880, 0.22)
+        setBoard(next);
+        finishLevel(finalScore);
       } else if (!findAvailablePair(next)) {
-        setBoard(reshuffleBoard(next))
-        setMessage('棋盘已自动重排，继续寻找配对。')
-      } else setBoard(next)
-    }, 260)
+        setBoard(reshuffleBoard(next));
+        setMessage("无可连接的图形，棋盘已自动重排。");
+      } else setBoard(next);
+    }, 230);
   }
 
   function showHint() {
-    if (phase !== 'playing' || matchLine || seconds <= 10) return
-    const pair = findAvailablePair(board)
-    if (!pair) return
-    setHint([pair.first, pair.second])
-    setSeconds(current => Math.max(0, current - 10))
-    setMessage('已标出一组可连接的图形，消耗 10 秒。')
-    if (hintTimeout.current) clearTimeout(hintTimeout.current)
-    hintTimeout.current = setTimeout(() => setHint(null), 2200)
+    if (phase !== "playing" || matchLine || hintsLeft === 0) return;
+    const pair = findAvailablePair(board);
+    if (!pair) return;
+    setHintsLeft((value) => value - 1);
+    setHint([pair.first, pair.second]);
+    setMessage("已标出一组可连接的图形。");
+    if (hintTimeout.current) clearTimeout(hintTimeout.current);
+    hintTimeout.current = setTimeout(() => setHint(null), 2200);
   }
 
   function doShuffle() {
-    if (phase !== 'playing' || matchLine || seconds <= 5) return
-    setBoard(reshuffleBoard(board))
-    setSelected(null)
-    setHint(null)
-    setSeconds(current => Math.max(0, current - 5))
-    setCombo(0)
-    setMessage('图形已重排，消耗 5 秒。')
+    if (phase !== "playing" || matchLine || shufflesLeft === 0) return;
+    setShufflesLeft((value) => value - 1);
+    setBoard(reshuffleBoard(board));
+    setSelected(null);
+    setHint(null);
+    setCombo(0);
+    setMessage("棋盘已重排。");
   }
 
   function toggleSound() {
-    setSound(current => {
-      try { localStorage.setItem('link-link-sound', current ? 'off' : 'on') } catch { /* Storage is optional. */ }
-      return !current
-    })
+    setSound((value) => {
+      try {
+        localStorage.setItem("link-link-sound", value ? "off" : "on");
+      } catch {
+        /* Sound remains in memory. */
+      }
+      return !value;
+    });
   }
 
-  const boardWidth = level.cols * tileSize + (level.cols - 1) * 7
-  const boardHeight = level.rows * tileSize + (level.rows - 1) * 7
-  const linePoints = matchLine?.path.map(({ row, col }) => {
-    const x = col === 0 ? 7 : col === level.cols + 1 ? boardWidth + 17 : 12 + (col - 1) * (tileSize + 7) + tileSize / 2
-    const y = row === 0 ? 7 : row === level.rows + 1 ? boardHeight + 17 : 12 + (row - 1) * (tileSize + 7) + tileSize / 2
-    return `${x},${y}`
-  }).join(' ')
+  function openLevelPicker() {
+    setLevelPage(Math.floor(levelIndex / 12));
+    setLevelPickerOpen(true);
+  }
 
-  return <div className="app-shell">
-    <header className="site-header">
-      <a className="brand" href="#top" aria-label="Link Link 首页"><span className="brand-mark"><span /><span /><span /><span /></span><span>link<span className="brand-dot">.</span>link</span></a>
-      <span className="header-tag">A GEOMETRIC MATCHING GAME <span className="tag-star">✳</span> NO. 001</span>
-      <button className="sound-button" onClick={toggleSound} aria-label={sound ? '关闭音效' : '开启音效'} title={sound ? '关闭音效' : '开启音效'}><Icon name={sound ? 'sound' : 'mute'} /></button>
-    </header>
+  const boardWidth = level.cols * tileSize + (level.cols - 1) * 5;
+  const boardHeight = level.rows * tileSize + (level.rows - 1) * 5;
+  const linePoints = matchLine?.path
+    .map(({ row, col }) => {
+      const x =
+        col === 0
+          ? 7
+          : col === level.cols + 1
+            ? boardWidth + 17
+            : 12 + (col - 1) * (tileSize + 5) + tileSize / 2;
+      const y =
+        row === 0
+          ? 7
+          : row === level.rows + 1
+            ? boardHeight + 17
+            : 12 + (row - 1) * (tileSize + 5) + tileSize / 2;
+      return `${x},${y}`;
+    })
+    .join(" ");
 
-    <main id="top">
-      <section className="intro">
-        <div className="intro-copy">
-          <div className="eyebrow"><span className="eyebrow-line" /> 轻松一点，连成一线 <span className="eyebrow-line" /></div>
-          <h1>让每一次<br /><em>相遇</em>都有迹可循<span className="heading-period">.</span></h1>
-          <p>找到相同的几何图形，用不超过两次转弯的路径连接它们。放慢节奏，享受恰到好处的专注。</p>
-          <div className="intro-meta"><span><b>01</b> 观察</span><i /> <span><b>02</b> 连接</span><i /> <span><b>03</b> 清空</span></div>
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-symbol">
+            <i />
+            <i />
+            <i />
+            <i />
+          </span>
+          <span>
+            link<span className="brand-dot">.</span>link
+          </span>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="art-orbit art-orbit-one" /><div className="art-orbit art-orbit-two" />
-          <div className="art-tile art-tile-a"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="12" /></svg></div>
-          <div className="art-tile art-tile-b"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="12" /></svg></div>
-          <div className="art-tile art-tile-c"><svg viewBox="0 0 48 48"><path d="M24 10 38 36H10Z" /></svg></div>
-          <div className="art-line" /><span className="art-caption">FIND YOUR CONNECTION</span>
+        <span className="topbar-center">
+          几何连连看 <span>·</span> 30 关闯关挑战
+        </span>
+        <div className="topbar-actions">
+          <button
+            className="icon-button"
+            onClick={toggleSound}
+            title={sound ? "关闭音效" : "开启音效"}
+            aria-label={sound ? "关闭音效" : "开启音效"}
+          >
+            {sound ? "♫" : "♪̸"}
+          </button>
+          <button className="level-menu-button" onClick={openLevelPicker}>
+            关卡列表 <span>▦</span>
+          </button>
         </div>
-      </section>
+      </header>
 
-      <section className="game-section" aria-label="连连看游戏">
-        <div className="section-heading"><div><span className="section-index">01 / THE GAME</span><h2>开始连接<span>.</span></h2></div><p>选择难度，准备好进入几何世界。</p></div>
-        <div className="game-layout">
-          <aside className="control-panel">
-            <div className="panel-top"><span className="panel-label">LEVEL SELECT</span><span className="tiny-shape">✳</span></div>
-            <h3>选择你的<br />节奏</h3>
-            <div className="level-list" role="group" aria-label="游戏难度">
-              {(Object.keys(LEVELS) as Difficulty[]).map((key, index) => <button key={key} className={`level-option ${difficulty === key ? 'active' : ''}`} onClick={() => reset(key)} aria-pressed={difficulty === key}><span className="level-number">0{index + 1}</span><span className="level-name">{LEVELS[key].label}</span><span className="level-size">{LEVELS[key].cols} × {LEVELS[key].rows}</span><span className="level-arrow">↗</span></button>)}
-            </div>
-            <div className="control-divider" />
-            <div className="stat-grid"><div><span>本局得分</span><strong>{score.toLocaleString()}</strong></div><div><span>最佳记录</span><strong>{best[difficulty].toLocaleString()}</strong></div></div>
-            <div className="howto"><span className="howto-icon">i</span><p>相同图形之间的连线最多转弯两次，也可以绕过棋盘边缘。</p></div>
-          </aside>
+      <main className="main-layout">
+        <aside className="sidebar">
+          <div className="side-label">YOUR JOURNEY</div>
+          <div className="chapter-count">
+            <strong>{String(level.number).padStart(2, "0")}</strong>
+            <span>/ {LEVELS.length}</span>
+          </div>
+          <h2>{level.chapter}</h2>
+          <p>
+            已解锁 {progress.unlocked} / {LEVELS.length} 关<br />
+            通关后解锁下一关
+          </p>
+          <div className="chapter-progress">
+            <div
+              style={{ width: `${(progress.unlocked / LEVELS.length) * 100}%` }}
+            />
+          </div>
+          <div className="side-divider" />
+          <div className="side-row">
+            <span>当前章节</span>
+            <span>{Math.floor(levelIndex / 6) + 1} / 5</span>
+          </div>
+          <div className="chapter-levels">
+            {LEVELS.slice(
+              Math.floor(levelIndex / 6) * 6,
+              Math.floor(levelIndex / 6) * 6 + 6,
+            ).map((item) => (
+              <button
+                key={item.number}
+                className={`mini-level ${item.number === level.number ? "active" : ""} ${item.number > progress.unlocked ? "locked" : ""}`}
+                disabled={item.number > progress.unlocked}
+                onClick={() => loadLevel(item.number - 1)}
+                aria-label={`第 ${item.number} 关${item.number > progress.unlocked ? "，未解锁" : ""}`}
+              >
+                {String(item.number).padStart(2, "0")}
+                {progress.stars[item.number - 1] > 0 && <small>★</small>}
+              </button>
+            ))}
+          </div>
+          <button className="all-levels" onClick={openLevelPicker}>
+            查看全部关卡 <span>↗</span>
+          </button>
+          <div className="side-tip">
+            <span>✳</span>
+            <p>相同图形之间的连线最多转弯两次。完成当前关卡，继续向前。</p>
+          </div>
+        </aside>
 
-          <div className="play-panel">
-            <div className="play-toolbar"><div className="play-title"><span className="live-dot" /> {phase === 'playing' ? '正在进行' : phase === 'paused' ? '已暂停' : phase === 'won' ? '挑战成功' : phase === 'lost' ? '时间结束' : '等待开始'} <span className="play-divider">/</span> {level.label}模式</div><div className={`timer ${seconds <= 30 ? 'timer-urgent' : ''}`} aria-label={`剩余时间 ${formatTime(seconds)}`}>{formatTime(seconds)}</div></div>
-            <div className="progress-area"><div className="progress-label"><span>完成进度</span><span>{Math.round(progress)}%</span></div><div className="progress-track"><div style={{ width: `${progress}%` }} /></div></div>
-            <div className="board-wrap" ref={boardRef}>
-              <div className="board-inner" style={{ '--cols': level.cols, '--tile': `${tileSize}px` } as CSSProperties}>
-                <div className="board-grid" role="grid" aria-label={`${level.rows} 行 ${level.cols} 列游戏棋盘`}>
-                  {board.map((line, row) => line.map((value, col) => {
-                    const point = { row, col }
-                    const chosen = selected && samePoint(selected, point)
-                    const highlighted = hint?.some(p => samePoint(p, point))
-                    const matching = matchLine && (samePoint(matchLine.first, point) || samePoint(matchLine.second, point))
-                    return <button type="button" role="gridcell" key={`${row}-${col}`} className={`tile ${value === null ? 'empty' : `shape-${value}`} ${chosen ? 'selected' : ''} ${highlighted ? 'hinted' : ''} ${matching ? 'matching' : ''}`} disabled={value === null || phase !== 'playing' || !!matchLine} onClick={() => selectTile(point)} aria-label={value === null ? `第 ${row + 1} 行第 ${col + 1} 列，空位` : `第 ${row + 1} 行第 ${col + 1} 列，图形 ${value + 1}`} aria-selected={!!chosen}>{value !== null && <Shape value={value} />}</button>
-                  }))}
-                </div>
-                {linePoints && <svg className="match-overlay" width={boardWidth + 24} height={boardHeight + 24} viewBox={`0 0 ${boardWidth + 24} ${boardHeight + 24}`} aria-hidden="true"><polyline points={linePoints} /></svg>}
+        <section className="game-panel" aria-label="连连看游戏">
+          <div className="game-head">
+            <div className="game-heading">
+              <span className="level-chip">
+                LEVEL {String(level.number).padStart(2, "0")}
+              </span>
+              <div>
+                <h1>
+                  第 {level.number} 关 <span>·</span> {level.chapter}
+                </h1>
+                <p>
+                  {level.cols} × {level.rows} 棋盘{" "}
+                  {level.blockers > 0 && <span>· 固定障碍</span>}{" "}
+                  {level.gravity && <span>· 重力下落</span>}
+                </p>
               </div>
-              {phase !== 'playing' && <div className="board-cover"><div className="cover-symbol">{phase === 'won' ? '✳' : phase === 'lost' ? '⌛' : phase === 'paused' ? 'Ⅱ' : '↗'}</div><h3>{phase === 'won' ? '挑战完成！' : phase === 'lost' ? '时间到了' : phase === 'paused' ? '稍作休息' : '准备开始？'}</h3><p>{phase === 'won' ? `得分 ${score.toLocaleString()} · 用时 ${formatTime(level.seconds - seconds)}` : phase === 'lost' ? '换个节奏，再试一次。' : phase === 'paused' ? '你的棋盘在这里等你。' : '点击下方按钮，开启这一局。'}</p><button className="cover-button" onClick={phase === 'paused' ? start : phase === 'ready' ? start : () => { reset(); setPhase('playing'); setMessage('找出两个相同图形，连线最多转弯两次。') }}>{phase === 'paused' ? '继续游戏' : phase === 'ready' ? '开始游戏' : '再玩一次'} <span>→</span></button></div>}
             </div>
-            <div className="play-actions"><div className="action-buttons"><button onClick={() => phase === 'playing' ? setPhase('paused') : phase === 'paused' ? start() : phase === 'ready' ? start() : reset()}><Icon name={phase === 'playing' ? 'pause' : phase === 'paused' || phase === 'ready' ? 'play' : 'restart'} /> {phase === 'playing' ? '暂停' : phase === 'paused' ? '继续' : phase === 'ready' ? '开始' : '重玩'}</button><button onClick={showHint} disabled={phase !== 'playing' || seconds <= 10}><Icon name="hint" /> 提示 <small>−10s</small></button><button onClick={doShuffle} disabled={phase !== 'playing' || seconds <= 5}><Icon name="shuffle" /> 重排 <small>−5s</small></button></div><span className="remaining">剩余 <b>{tilesLeft}</b> 块</span></div>
-            <p className="game-message" aria-live="polite"><span>↗</span> {message}</p>
+            <div className="head-stats">
+              <div>
+                <small>本关得分</small>
+                <strong>{score.toLocaleString()}</strong>
+              </div>
+              <div className={`time-stat ${seconds <= 20 ? "urgent" : ""}`}>
+                <small>剩余时间</small>
+                <strong>{formatTime(seconds)}</strong>
+              </div>
+            </div>
+          </div>
+          <div className="progress-row">
+            <span>
+              完成进度 <b>{completion}%</b>
+            </span>
+            <span>
+              剩余 <b>{tilesLeft}</b> 块
+            </span>
+          </div>
+          <div className="progress-track">
+            <div style={{ width: `${completion}%` }} />
+          </div>
+
+          <div className="board-space" ref={boardSpaceRef}>
+            <div
+              className="board-inner"
+              style={
+                {
+                  "--cols": level.cols,
+                  "--tile": `${tileSize}px`,
+                } as CSSProperties
+              }
+            >
+              <div
+                className="board-grid"
+                role="grid"
+                aria-label={`第 ${level.number} 关棋盘`}
+              >
+                {board.map((line, row) =>
+                  line.map((value, col) => {
+                    const point = { row, col };
+                    const chosen = selected && samePoint(selected, point);
+                    const highlighted = hint?.some((item) =>
+                      samePoint(item, point),
+                    );
+                    const matching =
+                      matchLine &&
+                      (samePoint(matchLine.first, point) ||
+                        samePoint(matchLine.second, point));
+                    return (
+                      <button
+                        key={`${row}-${col}`}
+                        type="button"
+                        role="gridcell"
+                        className={`tile ${value === null ? "empty" : value < 0 ? "blocker" : `shape-${value}`} ${chosen ? "selected" : ""} ${highlighted ? "hinted" : ""} ${matching ? "matching" : ""}`}
+                        disabled={
+                          value === null ||
+                          value < 0 ||
+                          phase !== "playing" ||
+                          !!matchLine ||
+                          levelPickerOpen
+                        }
+                        onClick={() => selectTile(point)}
+                        aria-label={`第 ${row + 1} 行第 ${col + 1} 列，${value === null ? "空位" : value < 0 ? "障碍" : `图形 ${value + 1}`}`}
+                        aria-selected={!!chosen}
+                      >
+                        {value !== null && value >= 0 && (
+                          <Shape value={value} />
+                        )}
+                        {value === -1 && (
+                          <span className="blocker-mark">×</span>
+                        )}
+                      </button>
+                    );
+                  }),
+                )}
+              </div>
+              {linePoints && (
+                <svg
+                  className="match-overlay"
+                  width={boardWidth + 24}
+                  height={boardHeight + 24}
+                  viewBox={`0 0 ${boardWidth + 24} ${boardHeight + 24}`}
+                  aria-hidden="true"
+                >
+                  <polyline points={linePoints} />
+                </svg>
+              )}
+            </div>
+            {phase !== "playing" && !levelPickerOpen && (
+              <div className="result-overlay">
+                <div className="result-card">
+                  <div className="result-icon">
+                    {phase === "won" ? "✳" : phase === "lost" ? "⌛" : "Ⅱ"}
+                  </div>
+                  <h2>
+                    {phase === "won"
+                      ? "连接完成！"
+                      : phase === "lost"
+                        ? "时间到了"
+                        : "已暂停"}
+                  </h2>
+                  <p>
+                    {phase === "won"
+                      ? `第 ${level.number} 关通关 · ${"★".repeat(starsEarned)}${"☆".repeat(3 - starsEarned)}`
+                      : phase === "lost"
+                        ? "再试一次，你会找到更好的路线。"
+                        : "准备好了就继续。"}
+                  </p>
+                  <div className="result-actions">
+                    {phase === "won" && levelIndex < LEVELS.length - 1 && (
+                      <button
+                        className="primary-button"
+                        onClick={() => loadLevel(levelIndex + 1)}
+                      >
+                        下一关 →
+                      </button>
+                    )}
+                    {phase === "paused" && (
+                      <button
+                        className="primary-button"
+                        onClick={() => setPhase("playing")}
+                      >
+                        继续游戏 →
+                      </button>
+                    )}
+                    {phase !== "paused" && (
+                      <button
+                        className={
+                          phase === "won" && levelIndex < LEVELS.length - 1
+                            ? "secondary-button"
+                            : "primary-button"
+                        }
+                        onClick={() => loadLevel(levelIndex)}
+                      >
+                        再玩一次
+                      </button>
+                    )}
+                  </div>
+                  {phase === "won" && (
+                    <button className="text-button" onClick={openLevelPicker}>
+                      选择其他关卡
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="game-footer">
+            <p className="game-message" aria-live="polite">
+              <span>✳</span> {message}
+            </p>
+            <div className="game-controls">
+              <button
+                onClick={() =>
+                  setPhase(phase === "playing" ? "paused" : "playing")
+                }
+                disabled={phase === "won" || phase === "lost"}
+              >
+                {phase === "paused" ? "▶ 继续" : "Ⅱ 暂停"}
+              </button>
+              <button
+                onClick={showHint}
+                disabled={phase !== "playing" || hintsLeft === 0}
+              >
+                ◇ 提示 <small>{hintsLeft}</small>
+              </button>
+              <button
+                onClick={doShuffle}
+                disabled={phase !== "playing" || shufflesLeft === 0}
+              >
+                ⤨ 重排 <small>{shufflesLeft}</small>
+              </button>
+              <button onClick={() => loadLevel(levelIndex)}>↺ 重玩</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {levelPickerOpen && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setLevelPickerOpen(false);
+          }}
+        >
+          <div
+            className="level-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="选择关卡"
+          >
+            <div className="modal-head">
+              <div>
+                <span>LEVEL SELECT</span>
+                <h2>选择关卡</h2>
+              </div>
+              <button
+                className="modal-close"
+                onClick={() => setLevelPickerOpen(false)}
+                aria-label="关闭关卡列表"
+              >
+                ×
+              </button>
+            </div>
+            <p className="modal-help">依次解锁。已通关的关卡可随时重玩。</p>
+            <div className="level-grid">
+              {LEVELS.slice(levelPage * 12, levelPage * 12 + 12).map((item) => (
+                <button
+                  key={item.number}
+                  disabled={item.number > progress.unlocked}
+                  className={`level-card ${item.number === level.number ? "current" : ""} ${item.number > progress.unlocked ? "locked" : ""}`}
+                  onClick={() => loadLevel(item.number - 1)}
+                >
+                  <strong>{String(item.number).padStart(2, "0")}</strong>
+                  <span>
+                    {item.number > progress.unlocked
+                      ? "锁定"
+                      : progress.stars[item.number - 1]
+                        ? `${"★".repeat(progress.stars[item.number - 1])}${"☆".repeat(3 - progress.stars[item.number - 1])}`
+                        : "待挑战"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="modal-pages">
+              <button
+                disabled={levelPage === 0}
+                onClick={() => setLevelPage((value) => value - 1)}
+              >
+                ← 上一页
+              </button>
+              <span>
+                {levelPage + 1} / {Math.ceil(LEVELS.length / 12)}
+              </span>
+              <button
+                disabled={levelPage === Math.ceil(LEVELS.length / 12) - 1}
+                onClick={() => setLevelPage((value) => value + 1)}
+              >
+                下一页 →
+              </button>
+            </div>
           </div>
         </div>
-      </section>
-      <footer><span>LINK LINK © 2026</span><span>一个关于观察与连接的小小练习 <span className="footer-star">✳</span></span></footer>
-    </main>
-  </div>
+      )}
+    </div>
+  );
 }
