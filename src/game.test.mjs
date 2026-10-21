@@ -59,7 +59,6 @@ test("ten stages retain the original easiest and hardest settings", () => {
     {
       number: 1,
       sourceNumber: 1,
-      chapter: "初识几何",
       rows: 6,
       cols: 6,
       seconds: 100,
@@ -73,7 +72,6 @@ test("ten stages retain the original easiest and hardest settings", () => {
     {
       number: 10,
       sourceNumber: 30,
-      chapter: "终章挑战",
       rows: 10,
       cols: 10,
       seconds: 150,

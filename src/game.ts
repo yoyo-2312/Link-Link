@@ -3,7 +3,6 @@ export type Board = (number | null)[][];
 export type Level = {
   number: number;
   sourceNumber: number;
-  chapter: string;
   rows: number;
   cols: number;
   seconds: number;
@@ -12,72 +11,23 @@ export type Level = {
   gravity: boolean;
 };
 
-const CHAPTERS = [
-  {
-    name: "初识几何",
-    rows: 6,
-    cols: 6,
-    sourceNumbers: [1, 4],
-    seconds: [100, 85],
-    types: [5, 7],
-    blockers: [0, 0],
-    gravity: false,
-  },
-  {
-    name: "留白迷宫",
-    rows: 6,
-    cols: 8,
-    sourceNumbers: [7, 10],
-    seconds: [120, 105],
-    types: [7, 9],
-    blockers: [4, 8],
-    gravity: false,
-  },
-  {
-    name: "错落方阵",
-    rows: 8,
-    cols: 8,
-    sourceNumbers: [13, 17],
-    seconds: [145, 125],
-    types: [8, 10],
-    blockers: [4, 12],
-    gravity: false,
-  },
-  {
-    name: "重力变奏",
-    rows: 8,
-    cols: 10,
-    sourceNumbers: [20, 24],
-    seconds: [165, 145],
-    types: [9, 11],
-    blockers: [4, 12],
-    gravity: true,
-  },
-  {
-    name: "终章挑战",
-    rows: 10,
-    cols: 10,
-    sourceNumbers: [27, 30],
-    seconds: [180, 150],
-    types: [11, 12],
-    blockers: [8, 12],
-    gravity: true,
-  },
+const LEVEL_SETTINGS = [
+  { sourceNumber: 1, rows: 6, cols: 6, seconds: 100, types: 5, blockers: 0, gravity: false },
+  { sourceNumber: 4, rows: 6, cols: 6, seconds: 85, types: 7, blockers: 0, gravity: false },
+  { sourceNumber: 7, rows: 6, cols: 8, seconds: 120, types: 7, blockers: 4, gravity: false },
+  { sourceNumber: 10, rows: 6, cols: 8, seconds: 105, types: 9, blockers: 8, gravity: false },
+  { sourceNumber: 13, rows: 8, cols: 8, seconds: 145, types: 8, blockers: 4, gravity: false },
+  { sourceNumber: 17, rows: 8, cols: 8, seconds: 125, types: 10, blockers: 12, gravity: false },
+  { sourceNumber: 20, rows: 8, cols: 10, seconds: 165, types: 9, blockers: 4, gravity: true },
+  { sourceNumber: 24, rows: 8, cols: 10, seconds: 145, types: 11, blockers: 12, gravity: true },
+  { sourceNumber: 27, rows: 10, cols: 10, seconds: 180, types: 11, blockers: 8, gravity: true },
+  { sourceNumber: 30, rows: 10, cols: 10, seconds: 150, types: 12, blockers: 12, gravity: true },
 ] as const;
 
-export const LEVELS: Level[] = CHAPTERS.flatMap((chapter, chapterIndex) =>
-  chapter.seconds.map((seconds, index) => ({
-    number: chapterIndex * 2 + index + 1,
-    sourceNumber: chapter.sourceNumbers[index],
-    chapter: chapter.name,
-    rows: chapter.rows,
-    cols: chapter.cols,
-    seconds,
-    types: chapter.types[index],
-    blockers: chapter.blockers[index] as Level["blockers"],
-    gravity: chapter.gravity,
-  })),
-);
+export const LEVELS: Level[] = LEVEL_SETTINGS.map((settings, index) => ({
+  ...settings,
+  number: index + 1,
+}));
 
 const DIRECTIONS = [
   [-1, 0],

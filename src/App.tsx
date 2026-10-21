@@ -119,6 +119,7 @@ export default function App() {
   const completion = Math.round((1 - tilesLeft / totalTiles) * 100);
   const starsEarned =
     seconds >= level.seconds * 0.5 ? 3 : seconds >= level.seconds * 0.2 ? 2 : 1;
+  const completedLevels = progress.stars.filter((stars) => stars > 0).length;
 
   useEffect(() => {
     if (phase !== "playing" || levelPickerOpen) return;
@@ -190,8 +191,7 @@ export default function App() {
   }
 
   function loadLevel(index: number) {
-    if (index < 0 || index >= LEVELS.length || index + 1 > progress.unlocked)
-      return;
+    if (index < 0 || index >= LEVELS.length) return;
     if (finishTimeout.current) clearTimeout(finishTimeout.current);
     if (hintTimeout.current) clearTimeout(hintTimeout.current);
     const next = LEVELS[index];
@@ -389,49 +389,34 @@ export default function App() {
 
       <main className="main-layout">
         <aside className="sidebar">
-          <div className="side-label">YOUR JOURNEY</div>
-          <div className="chapter-count">
-            <strong>{String(level.number).padStart(2, "0")}</strong>
-            <span>/ {LEVELS.length}</span>
-          </div>
-          <h2>{level.chapter}</h2>
+          <div className="side-label">LEVEL SELECT</div>
+          <h2>选择关卡</h2>
           <p>
-            已解锁 {progress.unlocked} / {LEVELS.length} 关<br />
-            通关后解锁下一关
+            已通关 {completedLevels} / {LEVELS.length} 关<br />
+            点击任意关卡开始
           </p>
-          <div className="chapter-progress">
+          <div className="sidebar-progress">
             <div
-              style={{ width: `${(progress.unlocked / LEVELS.length) * 100}%` }}
+              style={{ width: `${(completedLevels / LEVELS.length) * 100}%` }}
             />
           </div>
           <div className="side-divider" />
-          <div className="side-row">
-            <span>当前章节</span>
-            <span>{Math.floor(levelIndex / 2) + 1} / {LEVELS.length / 2}</span>
-          </div>
-          <div className="chapter-levels">
-            {LEVELS.slice(
-              Math.floor(levelIndex / 2) * 2,
-              Math.floor(levelIndex / 2) * 2 + 2,
-            ).map((item) => (
+          <div className="sidebar-levels">
+            {LEVELS.map((item) => (
               <button
                 key={item.number}
-                className={`mini-level ${item.number === level.number ? "active" : ""} ${item.number > progress.unlocked ? "locked" : ""}`}
-                disabled={item.number > progress.unlocked}
+                className={`mini-level ${item.number === level.number ? "active" : ""}`}
                 onClick={() => loadLevel(item.number - 1)}
-                aria-label={`第 ${item.number} 关${item.number > progress.unlocked ? "，未解锁" : ""}`}
+                aria-label={`第 ${item.number} 关`}
               >
                 {String(item.number).padStart(2, "0")}
                 {progress.stars[item.number - 1] > 0 && <small>★</small>}
               </button>
             ))}
           </div>
-          <button className="all-levels" onClick={openLevelPicker}>
-            查看全部关卡 <span>↗</span>
-          </button>
           <div className="side-tip">
             <span>✳</span>
-            <p>相同图形之间的连线最多转弯两次。完成当前关卡，继续向前。</p>
+            <p>相同图形之间的连线最多转弯两次。随时选择想玩的关卡。</p>
           </div>
         </aside>
 
@@ -443,7 +428,7 @@ export default function App() {
               </span>
               <div>
                 <h1>
-                  第 {level.number} 关 <span>·</span> {level.chapter}
+                  第 {level.number} 关
                 </h1>
                 <p>
                   {level.cols} × {level.rows} 棋盘{" "}
@@ -658,22 +643,19 @@ export default function App() {
                 ×
               </button>
             </div>
-            <p className="modal-help">依次解锁。已通关的关卡可随时重玩。</p>
+            <p className="modal-help">所有关卡均可直接挑战，已通关的关卡可随时重玩。</p>
             <div className="level-grid">
               {LEVELS.map((item) => (
                 <button
                   key={item.number}
-                  disabled={item.number > progress.unlocked}
-                  className={`level-card ${item.number === level.number ? "current" : ""} ${item.number > progress.unlocked ? "locked" : ""}`}
+                  className={`level-card ${item.number === level.number ? "current" : ""}`}
                   onClick={() => loadLevel(item.number - 1)}
                 >
                   <strong>{String(item.number).padStart(2, "0")}</strong>
                   <span>
-                    {item.number > progress.unlocked
-                      ? "锁定"
-                      : progress.stars[item.number - 1]
-                        ? `${"★".repeat(progress.stars[item.number - 1])}${"☆".repeat(3 - progress.stars[item.number - 1])}`
-                        : "待挑战"}
+                    {progress.stars[item.number - 1]
+                      ? `${"★".repeat(progress.stars[item.number - 1])}${"☆".repeat(3 - progress.stars[item.number - 1])}`
+                      : "待挑战"}
                   </span>
                 </button>
               ))}

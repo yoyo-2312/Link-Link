@@ -152,23 +152,6 @@ button:disabled {
   font-weight: 700;
   letter-spacing: 2px;
 }
-.chapter-count {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  margin: 18px 0 0;
-}
-.chapter-count strong {
-  color: #3b8467;
-  font-size: 68px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -5px;
-}
-.chapter-count span {
-  color: #a9b5aa;
-  font-size: 18px;
-}
 .sidebar h2 {
   font-size: 24px;
   font-weight: 600;
@@ -181,17 +164,17 @@ button:disabled {
   font-size: 11px;
   line-height: 1.8;
 }
-.chapter-progress,
+.sidebar-progress,
 .progress-track {
   height: 6px;
   border-radius: 99px;
   background: #eaf1e9;
   overflow: hidden;
 }
-.chapter-progress {
+.sidebar-progress {
   margin-top: 24px;
 }
-.chapter-progress div,
+.sidebar-progress div,
 .progress-track div {
   height: 100%;
   background: #55a77e;
@@ -203,21 +186,10 @@ button:disabled {
   background: #edf1eb;
   margin: 25px 0 20px;
 }
-.side-row {
-  display: flex;
-  justify-content: space-between;
-  color: #80968a;
-  font-size: 11px;
-  font-weight: 600;
-}
-.side-row span:last-child {
-  color: #37795e;
-}
-.chapter-levels {
+.sidebar-levels {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
-  margin-top: 15px;
 }
 .mini-level {
   height: 47px;
@@ -240,25 +212,8 @@ button:disabled {
   border-color: #3e876a;
   color: #fff;
 }
-.mini-level.locked {
-  color: #b5c2b8;
-  background: #f5f7f3;
-}
 .mini-level:not(:disabled):hover {
   border-color: #5da784;
-}
-.all-levels {
-  border: 0;
-  background: transparent;
-  color: #367e61;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 17px 0;
-  text-align: left;
-}
-.all-levels span {
-  float: right;
-  font-size: 17px;
 }
 .side-tip {
   margin-top: auto;
@@ -690,13 +645,6 @@ button:disabled {
 .level-card.current span {
   color: #f8d6a9;
 }
-.level-card.locked {
-  background: #f3f6f2;
-  color: #b6c5b8;
-}
-.level-card.locked span {
-  color: #b6c5b8;
-}
 .level-card:not(:disabled):hover {
   border-color: #54a47b;
 }
@@ -814,17 +762,8 @@ button:disabled {
   .sidebar .side-divider {
     display: none;
   }
-  .chapter-count {
-    margin-top: 6px;
-  }
-  .chapter-count strong {
-    font-size: 50px;
-  }
-  .chapter-progress {
+  .sidebar-progress {
     margin-top: 10px;
-  }
-  .chapter-levels {
-    margin-top: 7px;
   }
   .mini-level {
     height: 35px;
