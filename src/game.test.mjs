@@ -48,8 +48,44 @@ test("generated and reshuffled boards preserve pairs and a playable move", () =>
   assert.ok(findAvailablePair(shuffled));
 });
 
-test("all thirty stages have the configured size, obstacles, pairs, and an opening move", () => {
-  assert.equal(LEVELS.length, 30);
+test("ten stages retain the original easiest and hardest settings", () => {
+  assert.equal(LEVELS.length, 10);
+  assert.deepEqual(
+    LEVELS.map((level) => level.sourceNumber),
+    [1, 4, 7, 10, 13, 17, 20, 24, 27, 30],
+  );
+  assert.deepEqual(
+    LEVELS[0],
+    {
+      number: 1,
+      sourceNumber: 1,
+      chapter: "初识几何",
+      rows: 6,
+      cols: 6,
+      seconds: 100,
+      types: 5,
+      blockers: 0,
+      gravity: false,
+    },
+  );
+  assert.deepEqual(
+    LEVELS[9],
+    {
+      number: 10,
+      sourceNumber: 30,
+      chapter: "终章挑战",
+      rows: 10,
+      cols: 10,
+      seconds: 150,
+      types: 12,
+      blockers: 12,
+      gravity: true,
+    },
+  );
+});
+
+test("all ten stages have the configured size, obstacles, pairs, and an opening move", () => {
+  assert.equal(LEVELS.length, 10);
   for (const level of LEVELS) {
     const board = createLevelBoard(level);
     assert.equal(board.length, level.rows);

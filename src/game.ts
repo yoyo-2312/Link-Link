@@ -2,6 +2,7 @@ export type Point = { row: number; col: number };
 export type Board = (number | null)[][];
 export type Level = {
   number: number;
+  sourceNumber: number;
   chapter: string;
   rows: number;
   cols: number;
@@ -16,52 +17,58 @@ const CHAPTERS = [
     name: "初识几何",
     rows: 6,
     cols: 6,
-    seconds: [100, 95, 90, 85, 80, 75],
-    types: [5, 6, 6, 7, 7, 8],
-    blockers: [0, 0, 0, 0, 0, 0],
+    sourceNumbers: [1, 4],
+    seconds: [100, 85],
+    types: [5, 7],
+    blockers: [0, 0],
     gravity: false,
   },
   {
     name: "留白迷宫",
     rows: 6,
     cols: 8,
-    seconds: [120, 115, 110, 105, 100, 95],
-    types: [7, 8, 8, 9, 9, 10],
-    blockers: [4, 4, 4, 8, 8, 8],
+    sourceNumbers: [7, 10],
+    seconds: [120, 105],
+    types: [7, 9],
+    blockers: [4, 8],
     gravity: false,
   },
   {
     name: "错落方阵",
     rows: 8,
     cols: 8,
-    seconds: [145, 140, 135, 130, 125, 120],
-    types: [8, 9, 9, 10, 10, 11],
-    blockers: [4, 4, 8, 8, 12, 12],
+    sourceNumbers: [13, 17],
+    seconds: [145, 125],
+    types: [8, 10],
+    blockers: [4, 12],
     gravity: false,
   },
   {
     name: "重力变奏",
     rows: 8,
     cols: 10,
-    seconds: [170, 165, 160, 155, 150, 145],
-    types: [9, 9, 10, 10, 11, 11],
-    blockers: [0, 4, 4, 8, 8, 12],
+    sourceNumbers: [20, 24],
+    seconds: [165, 145],
+    types: [9, 11],
+    blockers: [4, 12],
     gravity: true,
   },
   {
     name: "终章挑战",
     rows: 10,
     cols: 10,
-    seconds: [200, 190, 180, 170, 160, 150],
-    types: [10, 10, 11, 11, 12, 12],
-    blockers: [4, 8, 8, 12, 12, 12],
+    sourceNumbers: [27, 30],
+    seconds: [180, 150],
+    types: [11, 12],
+    blockers: [8, 12],
     gravity: true,
   },
 ] as const;
 
 export const LEVELS: Level[] = CHAPTERS.flatMap((chapter, chapterIndex) =>
   chapter.seconds.map((seconds, index) => ({
-    number: chapterIndex * 6 + index + 1,
+    number: chapterIndex * 2 + index + 1,
+    sourceNumber: chapter.sourceNumbers[index],
     chapter: chapter.name,
     rows: chapter.rows,
     cols: chapter.cols,

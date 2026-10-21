@@ -33,19 +33,27 @@ const SHAPES = [
 
 function readProgress(): Progress {
   try {
+    const current = localStorage.getItem("link-link-progress-v3");
+    const legacy = current === null;
     const saved = JSON.parse(
-      localStorage.getItem("link-link-progress-v2") ?? "{}",
+      current ?? localStorage.getItem("link-link-progress-v2") ?? "{}",
     );
+    const previousUnlocked = Math.max(1, Number(saved.unlocked) || 1);
+    const savedIndex = (index: number) =>
+      legacy ? LEVELS[index].sourceNumber - 1 : index;
     return {
-      unlocked: Math.max(
-        1,
-        Math.min(LEVELS.length, Number(saved.unlocked) || 1),
-      ),
+      unlocked: legacy
+        ? Math.min(
+            LEVELS.length,
+            1 + LEVELS.filter((level) => level.sourceNumber < previousUnlocked)
+              .length,
+          )
+        : Math.min(LEVELS.length, previousUnlocked),
       stars: Array.from({ length: LEVELS.length }, (_, i) =>
-        Math.max(0, Math.min(3, Number(saved.stars?.[i]) || 0)),
+        Math.max(0, Math.min(3, Number(saved.stars?.[savedIndex(i)]) || 0)),
       ),
       best: Array.from({ length: LEVELS.length }, (_, i) =>
-        Math.max(0, Number(saved.best?.[i]) || 0),
+        Math.max(0, Number(saved.best?.[savedIndex(i)]) || 0),
       ),
     };
   } catch {
@@ -100,7 +108,6 @@ export default function App() {
   });
   const [message, setMessage] = useState("连接相同图形，路线最多转弯两次。");
   const [levelPickerOpen, setLevelPickerOpen] = useState(false);
-  const [levelPage, setLevelPage] = useState(0);
   const [tileSize, setTileSize] = useState(48);
   const boardSpaceRef = useRef<HTMLDivElement>(null);
   const finishTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,7 +231,7 @@ export default function App() {
     updated.best[levelIndex] = Math.max(updated.best[levelIndex], finalScore);
     setProgress(updated);
     try {
-      localStorage.setItem("link-link-progress-v2", JSON.stringify(updated));
+      localStorage.setItem("link-link-progress-v3", JSON.stringify(updated));
     } catch {
       /* Progress remains in memory. */
     }
@@ -325,7 +332,6 @@ export default function App() {
   }
 
   function openLevelPicker() {
-    setLevelPage(Math.floor(levelIndex / 12));
     setLevelPickerOpen(true);
   }
 
@@ -364,7 +370,7 @@ export default function App() {
           </span>
         </div>
         <span className="topbar-center">
-          几何连连看 <span>·</span> 30 关闯关挑战
+          几何连连看 <span>·</span> {LEVELS.length} 关闯关挑战
         </span>
         <div className="topbar-actions">
           <button
@@ -401,12 +407,12 @@ export default function App() {
           <div className="side-divider" />
           <div className="side-row">
             <span>当前章节</span>
-            <span>{Math.floor(levelIndex / 6) + 1} / 5</span>
+            <span>{Math.floor(levelIndex / 2) + 1} / {LEVELS.length / 2}</span>
           </div>
           <div className="chapter-levels">
             {LEVELS.slice(
-              Math.floor(levelIndex / 6) * 6,
-              Math.floor(levelIndex / 6) * 6 + 6,
+              Math.floor(levelIndex / 2) * 2,
+              Math.floor(levelIndex / 2) * 2 + 2,
             ).map((item) => (
               <button
                 key={item.number}
@@ -654,7 +660,7 @@ export default function App() {
             </div>
             <p className="modal-help">依次解锁。已通关的关卡可随时重玩。</p>
             <div className="level-grid">
-              {LEVELS.slice(levelPage * 12, levelPage * 12 + 12).map((item) => (
+              {LEVELS.map((item) => (
                 <button
                   key={item.number}
                   disabled={item.number > progress.unlocked}
@@ -671,23 +677,6 @@ export default function App() {
                   </span>
                 </button>
               ))}
-            </div>
-            <div className="modal-pages">
-              <button
-                disabled={levelPage === 0}
-                onClick={() => setLevelPage((value) => value - 1)}
-              >
-                ← 上一页
-              </button>
-              <span>
-                {levelPage + 1} / {Math.ceil(LEVELS.length / 12)}
-              </span>
-              <button
-                disabled={levelPage === Math.ceil(LEVELS.length / 12) - 1}
-                onClick={() => setLevelPage((value) => value + 1)}
-              >
-                下一页 →
-              </button>
             </div>
           </div>
         </div>

@@ -700,25 +700,6 @@ button:disabled {
 .level-card:not(:disabled):hover {
   border-color: #54a47b;
 }
-.modal-pages {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 18px;
-  font-size: 11px;
-  color: #879d8b;
-}
-.modal-pages button {
-  border: 0;
-  background: transparent;
-  color: #43886a;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 7px 2px;
-}
-.modal-pages button:disabled {
-  color: #b7c5b9;
-}
 
 @keyframes hintPulse {
   50% {
