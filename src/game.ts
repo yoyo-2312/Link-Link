@@ -15,11 +15,11 @@ const LEVEL_SETTINGS = [
   { sourceNumber: 4, rows: 6, cols: 6, types: 7, blockers: 0, gravity: false },
   { sourceNumber: 7, rows: 6, cols: 8, types: 8, blockers: 4, gravity: false },
   { sourceNumber: 10, rows: 8, cols: 8, types: 9, blockers: 8, gravity: false },
-  { sourceNumber: 13, rows: 8, cols: 8, types: 10, blockers: 12, gravity: false },
-  { sourceNumber: 17, rows: 8, cols: 10, types: 10, blockers: 12, gravity: true },
+  { sourceNumber: 13, rows: 8, cols: 8, types: 10, blockers: 8, gravity: false },
+  { sourceNumber: 17, rows: 8, cols: 10, types: 10, blockers: 12, gravity: false },
   { sourceNumber: 20, rows: 8, cols: 10, types: 11, blockers: 12, gravity: true },
   { sourceNumber: 24, rows: 10, cols: 10, types: 11, blockers: 12, gravity: true },
-  { sourceNumber: 27, rows: 10, cols: 10, types: 12, blockers: 12, gravity: true },
+  { sourceNumber: 27, rows: 12, cols: 10, types: 12, blockers: 16, gravity: true },
   { sourceNumber: 30, rows: 12, cols: 12, types: 12, blockers: 16, gravity: true },
 ] as const;
 
