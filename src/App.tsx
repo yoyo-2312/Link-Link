@@ -12,7 +12,7 @@ import {
   type Point,
 } from "./game";
 
-type Phase = "playing" | "paused" | "won" | "lost";
+type Phase = "playing" | "paused" | "won";
 type Progress = { unlocked: number; stars: number[]; best: number[] };
 type MatchLine = { path: Point[]; first: Point; second: Point };
 
@@ -65,10 +65,10 @@ function readProgress(): Progress {
   }
 }
 
-function formatTime(seconds: number) {
-  return `${Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
+function starsForScore(score: number, pairs: number) {
+  const maximumScore = 100 * pairs + (50 * pairs * (pairs - 1)) / 2;
+  const ratio = maximumScore ? score / maximumScore : 1;
+  return ratio >= 0.9 ? 3 : ratio >= 0.65 ? 2 : 1;
 }
 
 function Shape({ value }: { value: number }) {
@@ -89,11 +89,9 @@ export default function App() {
     createLevelBoard(LEVELS[readProgress().unlocked - 1]),
   );
   const [phase, setPhase] = useState<Phase>("playing");
-  const [seconds, setSeconds] = useState(
-    () => LEVELS[readProgress().unlocked - 1].seconds,
-  );
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
+  const [starsEarned, setStarsEarned] = useState(0);
   const [selected, setSelected] = useState<Point | null>(null);
   const [matchLine, setMatchLine] = useState<MatchLine | null>(null);
   const [hint, setHint] = useState<Point[] | null>(null);
@@ -112,30 +110,11 @@ export default function App() {
   const boardSpaceRef = useRef<HTMLDivElement>(null);
   const finishTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastMatch = useRef(0);
   const audioContext = useRef<AudioContext | null>(null);
   const tilesLeft = remainingTiles(board);
   const totalTiles = level.rows * level.cols - level.blockers;
   const completion = Math.round((1 - tilesLeft / totalTiles) * 100);
-  const starsEarned =
-    seconds >= level.seconds * 0.5 ? 3 : seconds >= level.seconds * 0.2 ? 2 : 1;
   const completedLevels = progress.stars.filter((stars) => stars > 0).length;
-
-  useEffect(() => {
-    if (phase !== "playing" || levelPickerOpen) return;
-    const timer = window.setInterval(
-      () => setSeconds((value) => Math.max(0, value - 1)),
-      1000,
-    );
-    return () => window.clearInterval(timer);
-  }, [phase, levelPickerOpen]);
-
-  useEffect(() => {
-    if (phase === "playing" && seconds === 0) {
-      setPhase("lost");
-      setMessage("时间到！再挑战一次。");
-    }
-  }, [phase, seconds]);
 
   useEffect(() => {
     const element = boardSpaceRef.current;
@@ -198,9 +177,9 @@ export default function App() {
     setLevelIndex(index);
     setBoard(createLevelBoard(next));
     setPhase("playing");
-    setSeconds(next.seconds);
     setScore(0);
     setCombo(0);
+    setStarsEarned(0);
     setSelected(null);
     setMatchLine(null);
     setHint(null);
@@ -212,10 +191,10 @@ export default function App() {
         : "连接相同图形，路线最多转弯两次。",
     );
     setLevelPickerOpen(false);
-    lastMatch.current = 0;
   }
 
   function finishLevel(finalScore: number) {
+    const earnedStars = starsForScore(finalScore, totalTiles / 2);
     const updated: Progress = {
       unlocked: Math.min(
         LEVELS.length,
@@ -226,10 +205,11 @@ export default function App() {
     };
     updated.stars[levelIndex] = Math.max(
       updated.stars[levelIndex],
-      starsEarned,
+      earnedStars,
     );
     updated.best[levelIndex] = Math.max(updated.best[levelIndex], finalScore);
     setProgress(updated);
+    setStarsEarned(earnedStars);
     try {
       localStorage.setItem("link-link-progress-v3", JSON.stringify(updated));
     } catch {
@@ -273,20 +253,23 @@ export default function App() {
       return;
     }
 
-    const nextCombo =
-      Date.now() - lastMatch.current < 4500 ? Math.min(combo + 1, 5) : 1;
-    lastMatch.current = Date.now();
+    const nextCombo = combo + 1;
+    const pointsEarned = 100 + 50 * (nextCombo - 1);
     setCombo(nextCombo);
     setMatchLine({ path, first: selected, second: point });
     setSelected(null);
-    setMessage(nextCombo > 1 ? `漂亮！连击 ×${nextCombo}` : "连接成功！");
+    setMessage(
+      nextCombo > 1
+        ? `漂亮！连击 ×${nextCombo}，得分 +${pointsEarned}`
+        : `连接成功！得分 +${pointsEarned}`,
+    );
     beep(660, 0.1);
     finishTimeout.current = setTimeout(() => {
       let next = board.map((line) => [...line]);
       next[selected.row][selected.col] = null;
       next[point.row][point.col] = null;
       if (level.gravity) next = applyGravity(next);
-      const finalScore = score + 100 * nextCombo;
+      const finalScore = score + pointsEarned;
       setScore(finalScore);
       setMatchLine(null);
       if (remainingTiles(next) === 0) {
@@ -442,9 +425,9 @@ export default function App() {
                 <small>本关得分</small>
                 <strong>{score.toLocaleString()}</strong>
               </div>
-              <div className={`time-stat ${seconds <= 20 ? "urgent" : ""}`}>
-                <small>剩余时间</small>
-                <strong>{formatTime(seconds)}</strong>
+              <div>
+                <small>本关最高</small>
+                <strong>{Math.max(progress.best[levelIndex], score).toLocaleString()}</strong>
               </div>
             </div>
           </div>
@@ -530,21 +513,15 @@ export default function App() {
               <div className="result-overlay">
                 <div className="result-card">
                   <div className="result-icon">
-                    {phase === "won" ? "✳" : phase === "lost" ? "⌛" : "Ⅱ"}
+                    {phase === "won" ? "✳" : "Ⅱ"}
                   </div>
                   <h2>
-                    {phase === "won"
-                      ? "连接完成！"
-                      : phase === "lost"
-                        ? "时间到了"
-                        : "已暂停"}
+                    {phase === "won" ? "连接完成！" : "已暂停"}
                   </h2>
                   <p>
                     {phase === "won"
-                      ? `第 ${level.number} 关通关 · ${"★".repeat(starsEarned)}${"☆".repeat(3 - starsEarned)}`
-                      : phase === "lost"
-                        ? "再试一次，你会找到更好的路线。"
-                        : "准备好了就继续。"}
+                      ? `本关得分 ${score.toLocaleString()} · 最高 ${progress.best[levelIndex].toLocaleString()} · ${"★".repeat(starsEarned)}${"☆".repeat(3 - starsEarned)}`
+                      : "准备好了就继续。"}
                   </p>
                   <div className="result-actions">
                     {phase === "won" && levelIndex < LEVELS.length - 1 && (
@@ -563,7 +540,7 @@ export default function App() {
                         继续游戏 →
                       </button>
                     )}
-                    {phase !== "paused" && (
+                    {phase === "won" && (
                       <button
                         className={
                           phase === "won" && levelIndex < LEVELS.length - 1
@@ -595,7 +572,7 @@ export default function App() {
                 onClick={() =>
                   setPhase(phase === "playing" ? "paused" : "playing")
                 }
-                disabled={phase === "won" || phase === "lost"}
+                disabled={phase === "won"}
               >
                 {phase === "paused" ? "▶ 继续" : "Ⅱ 暂停"}
               </button>

@@ -5,23 +5,22 @@ export type Level = {
   sourceNumber: number;
   rows: number;
   cols: number;
-  seconds: number;
   types: number;
   blockers: 0 | 4 | 8 | 12;
   gravity: boolean;
 };
 
 const LEVEL_SETTINGS = [
-  { sourceNumber: 1, rows: 6, cols: 6, seconds: 100, types: 5, blockers: 0, gravity: false },
-  { sourceNumber: 4, rows: 6, cols: 6, seconds: 85, types: 7, blockers: 0, gravity: false },
-  { sourceNumber: 7, rows: 6, cols: 8, seconds: 120, types: 7, blockers: 4, gravity: false },
-  { sourceNumber: 10, rows: 6, cols: 8, seconds: 105, types: 9, blockers: 8, gravity: false },
-  { sourceNumber: 13, rows: 8, cols: 8, seconds: 145, types: 8, blockers: 4, gravity: false },
-  { sourceNumber: 17, rows: 8, cols: 8, seconds: 125, types: 10, blockers: 12, gravity: false },
-  { sourceNumber: 20, rows: 8, cols: 10, seconds: 165, types: 9, blockers: 4, gravity: true },
-  { sourceNumber: 24, rows: 8, cols: 10, seconds: 145, types: 11, blockers: 12, gravity: true },
-  { sourceNumber: 27, rows: 10, cols: 10, seconds: 180, types: 11, blockers: 8, gravity: true },
-  { sourceNumber: 30, rows: 10, cols: 10, seconds: 150, types: 12, blockers: 12, gravity: true },
+  { sourceNumber: 1, rows: 6, cols: 6, types: 5, blockers: 0, gravity: false },
+  { sourceNumber: 4, rows: 6, cols: 6, types: 7, blockers: 0, gravity: false },
+  { sourceNumber: 7, rows: 6, cols: 8, types: 7, blockers: 4, gravity: false },
+  { sourceNumber: 10, rows: 6, cols: 8, types: 9, blockers: 8, gravity: false },
+  { sourceNumber: 13, rows: 8, cols: 8, types: 8, blockers: 4, gravity: false },
+  { sourceNumber: 17, rows: 8, cols: 8, types: 10, blockers: 12, gravity: false },
+  { sourceNumber: 20, rows: 8, cols: 10, types: 9, blockers: 4, gravity: true },
+  { sourceNumber: 24, rows: 8, cols: 10, types: 11, blockers: 12, gravity: true },
+  { sourceNumber: 27, rows: 10, cols: 10, types: 11, blockers: 8, gravity: true },
+  { sourceNumber: 30, rows: 10, cols: 10, types: 12, blockers: 12, gravity: true },
 ] as const;
 
 export const LEVELS: Level[] = LEVEL_SETTINGS.map((settings, index) => ({
