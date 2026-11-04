@@ -19,7 +19,7 @@ const LEVEL_SETTINGS = [
   { sourceNumber: 17, rows: 8, cols: 10, types: 10, blockers: 12, gravity: false },
   { sourceNumber: 20, rows: 8, cols: 10, types: 11, blockers: 12, gravity: true },
   { sourceNumber: 24, rows: 10, cols: 10, types: 11, blockers: 12, gravity: true },
-  { sourceNumber: 27, rows: 12, cols: 10, types: 12, blockers: 16, gravity: true },
+  { sourceNumber: 27, rows: 10, cols: 12, types: 12, blockers: 16, gravity: true },
   { sourceNumber: 30, rows: 12, cols: 12, types: 12, blockers: 16, gravity: true },
 ] as const;
 
