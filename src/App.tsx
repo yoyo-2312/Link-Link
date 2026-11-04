@@ -16,19 +16,19 @@ type Phase = "playing" | "paused" | "won" | "lost";
 type Progress = { unlocked: number; stars: number[]; best: number[] };
 type MatchLine = { path: Point[]; first: Point; second: Point };
 
-const SHAPES = [
-  <circle cx="24" cy="24" r="12" />,
-  <rect x="12" y="12" width="24" height="24" rx="3" />,
-  <path d="M24 9 39 37H9Z" />,
-  <path d="M24 8 40 24 24 40 8 24Z" />,
-  <path d="M24 7 40 20 34 39H14L8 20Z" />,
-  <path d="M24 7 29 18 41 19 32 28 35 40 24 34 13 40 16 28 7 19 19 18Z" />,
-  <path d="M11 11h26v8H19v18h-8Z" />,
-  <path d="M24 9a15 15 0 1 1-15 15h8a7 7 0 1 0 7-7Z" />,
-  <path d="M20 8h8v12h12v8H28v12h-8V28H8v-8h12Z" />,
-  <path d="m16 10 16 0 9 14-9 14H16L7 24Z" />,
-  <path d="M10 12h28M10 24h28M10 36h28" />,
-  <path d="M10 10h28L27 24l11 14H10l11-14Z" />,
+const FRUITS = [
+  "🍎",
+  "🍊",
+  "🍋",
+  "🍐",
+  "🍑",
+  "🍒",
+  "🍓",
+  "🍇",
+  "🥝",
+  "🍍",
+  "🥥",
+  "🍈",
 ];
 
 function readProgress(): Progress {
@@ -73,9 +73,9 @@ function formatTime(seconds: number) {
 
 function Shape({ value }: { value: number }) {
   return (
-    <svg className="shape" viewBox="0 0 48 48" aria-hidden="true">
-      {SHAPES[value]}
-    </svg>
+    <span className="fruit-icon" aria-hidden="true">
+      {FRUITS[value]}
+    </span>
   );
 }
 

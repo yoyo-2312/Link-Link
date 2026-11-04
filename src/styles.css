@@ -383,47 +383,12 @@ button:disabled {
   font-size: 16px;
   line-height: 1;
 }
-.shape {
-  width: 68%;
-  height: 68%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.shape-1 {
-  color: #ed986f;
-}
-.shape-2 {
-  color: #7896bd;
-}
-.shape-3 {
-  color: #a685af;
-}
-.shape-4 {
-  color: #8ca76a;
-}
-.shape-5 {
-  color: #dbaa69;
-}
-.shape-6 {
-  color: #60a8aa;
-}
-.shape-7 {
-  color: #d88794;
-}
-.shape-8 {
-  color: #776eae;
-}
-.shape-9 {
-  color: #b88762;
-}
-.shape-10 {
-  color: #61a585;
-}
-.shape-11 {
-  color: #c17e91;
+.fruit-icon {
+  display: block;
+  font-size: calc(var(--tile) * 0.58);
+  line-height: 1;
+  filter: drop-shadow(0 2px 1px #263b331c);
+  user-select: none;
 }
 .match-overlay {
   position: absolute;
