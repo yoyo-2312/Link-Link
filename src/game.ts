@@ -6,7 +6,7 @@ export type Level = {
   rows: number;
   cols: number;
   types: number;
-  blockers: 0 | 4 | 8 | 12;
+  blockers: 0 | 4 | 8 | 12 | 16;
   gravity: boolean;
 };
 
@@ -20,7 +20,7 @@ const LEVEL_SETTINGS = [
   { sourceNumber: 20, rows: 8, cols: 10, types: 11, blockers: 12, gravity: true },
   { sourceNumber: 24, rows: 10, cols: 10, types: 11, blockers: 12, gravity: true },
   { sourceNumber: 27, rows: 10, cols: 10, types: 12, blockers: 12, gravity: true },
-  { sourceNumber: 30, rows: 10, cols: 10, types: 12, blockers: 12, gravity: true },
+  { sourceNumber: 30, rows: 12, cols: 12, types: 12, blockers: 16, gravity: true },
 ] as const;
 
 export const LEVELS: Level[] = LEVEL_SETTINGS.map((settings, index) => ({
@@ -268,6 +268,10 @@ export function createLevelBoard(level: Level): Board {
     { row: midRow, col: 1 },
     { row: midRow - 1, col: level.cols - 2 },
     { row: midRow, col: level.cols - 2 },
+    { row: 1, col: midCol - 1 },
+    { row: 1, col: midCol },
+    { row: level.rows - 2, col: midCol - 1 },
+    { row: level.rows - 2, col: midCol },
   ];
   candidates.slice(0, level.blockers).forEach(({ row, col }) => {
     board[row][col] = -1;
