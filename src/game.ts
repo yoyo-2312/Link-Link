@@ -13,13 +13,13 @@ export type Level = {
 const LEVEL_SETTINGS = [
   { sourceNumber: 1, rows: 6, cols: 6, types: 5, blockers: 0, gravity: false },
   { sourceNumber: 4, rows: 6, cols: 6, types: 7, blockers: 0, gravity: false },
-  { sourceNumber: 7, rows: 6, cols: 8, types: 7, blockers: 4, gravity: false },
-  { sourceNumber: 10, rows: 6, cols: 8, types: 9, blockers: 8, gravity: false },
-  { sourceNumber: 13, rows: 8, cols: 8, types: 8, blockers: 4, gravity: false },
-  { sourceNumber: 17, rows: 8, cols: 8, types: 10, blockers: 12, gravity: false },
-  { sourceNumber: 20, rows: 8, cols: 10, types: 9, blockers: 4, gravity: true },
-  { sourceNumber: 24, rows: 8, cols: 10, types: 11, blockers: 12, gravity: true },
-  { sourceNumber: 27, rows: 10, cols: 10, types: 11, blockers: 8, gravity: true },
+  { sourceNumber: 7, rows: 6, cols: 8, types: 8, blockers: 4, gravity: false },
+  { sourceNumber: 10, rows: 8, cols: 8, types: 9, blockers: 8, gravity: false },
+  { sourceNumber: 13, rows: 8, cols: 8, types: 10, blockers: 12, gravity: false },
+  { sourceNumber: 17, rows: 8, cols: 10, types: 10, blockers: 12, gravity: true },
+  { sourceNumber: 20, rows: 8, cols: 10, types: 11, blockers: 12, gravity: true },
+  { sourceNumber: 24, rows: 10, cols: 10, types: 11, blockers: 12, gravity: true },
+  { sourceNumber: 27, rows: 10, cols: 10, types: 12, blockers: 12, gravity: true },
   { sourceNumber: 30, rows: 10, cols: 10, types: 12, blockers: 12, gravity: true },
 ] as const;
 
