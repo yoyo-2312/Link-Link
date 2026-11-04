@@ -29,6 +29,8 @@ const FRUITS = [
   "🍍",
   "🥥",
   "🍈",
+  "🍌",
+  "🍉",
 ];
 
 function readProgress(): Progress {

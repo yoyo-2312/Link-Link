@@ -73,7 +73,7 @@ test("ten stages retain the original easiest and hardest settings", () => {
       sourceNumber: 30,
       rows: 12,
       cols: 12,
-      types: 12,
+      types: 14,
       blockers: 16,
       gravity: true,
     },
